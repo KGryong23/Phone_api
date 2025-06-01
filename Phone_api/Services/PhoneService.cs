@@ -26,7 +26,7 @@ namespace Phone_api.Services
         public async Task<PagedResult<PhoneDto>> GetPagedAsync(BaseQuery query)
         {
             var result = await _phoneRepository.GetPagedAsync(query, "Model", "Price");
-            var phones = result.Data.Select(p => new PhoneDto
+            var phones = result.Items.Select(p => new PhoneDto
             {
                 Id = p.Id,
                 Model = p.Model,
@@ -110,9 +110,6 @@ namespace Phone_api.Services
         public async Task<bool> DeleteAsync(Guid id)
         {
             var phone = await _phoneRepository.GetByIdAsync(id);
-            if (phone is null)
-                throw new ArgumentException(AppResources.PhoneNotFound, nameof(id));
-
             _phoneRepository.Delete(phone);
             return await _phoneRepository.SaveChangesAsync();
         }

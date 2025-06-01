@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Phone_api.Common;
 using Phone_api.Dtos;
-using Phone_api.Extensions;
 using Phone_api.Services;
+using Phone_api.Extensions;
+using System;
+using System.Threading.Tasks;
 
 namespace Phone_api.Controllers
 {
@@ -29,23 +32,19 @@ namespace Phone_api.Controllers
         /// </summary>
         /// <param name="query">Tham số truy vấn cho phân trang, tìm kiếm và sắp xếp.</param>
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResult<PhoneDto>))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResponse))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PagedResult<PhoneDto>>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ApiResponse<object>))]
         public async Task<IActionResult> GetPaged([FromQuery] BaseQuery query)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                    return this.BadRequestFromModelState(ModelState);
+                var errors = ControllerBaseExtensions.GetValidationErrors(ModelState);
+                return BadRequest(ApiResponse<object>.ErrorResult("Dữ liệu không hợp lệ.", errors));
+            }
 
-                var result = await _phoneService.GetPagedAsync(query);
-                return Ok(result);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new ErrorResponse { Message = AppResources.InternalServerError });
-            }
+            var result = await _phoneService.GetPagedAsync(query);
+            return Ok(ApiResponse<PagedResult<PhoneDto>>.SuccessResult(result));
         }
 
         /// <summary>
@@ -53,22 +52,17 @@ namespace Phone_api.Controllers
         /// </summary>
         /// <param name="id">Định danh duy nhất của điện thoại.</param>
         [HttpGet("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PhoneDto))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResponse))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PhoneDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ApiResponse<object>))]
         public async Task<IActionResult> GetById(Guid id)
         {
-            try
-            {
-                var phone = await _phoneService.GetByIdAsync(id);
-                if (phone.Id == Guid.Empty)
-                    return NotFound(new ErrorResponse { Message = AppResources.PhoneNotFound });
-                return Ok(phone);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
-            }
+            if (id == Guid.Empty)
+                return this.BadRequestForInvalidId();
+
+            var phone = await _phoneService.GetByIdAsync(id);
+            return Ok(ApiResponse<PhoneDto>.SuccessResult(phone));
         }
 
         /// <summary>
@@ -76,27 +70,19 @@ namespace Phone_api.Controllers
         /// </summary>
         /// <param name="request">Yêu cầu chứa thông tin điện thoại cần tạo.</param>
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(SuccessResponse))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(BadResponse))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResponse))]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ApiResponse<object>))]
         public async Task<IActionResult> Create([FromBody] CreatePhoneRequest request)
         {
-            try
+            if (!TryValidateModel(request))
             {
-                if (!TryValidateModel(request))
-                    return this.BadRequestFromModelState(ModelState);
+                var errors = ControllerBaseExtensions.GetValidationErrors(ModelState);
+                return BadRequest(ApiResponse<object>.ErrorResult("Dữ liệu không hợp lệ.", errors));
+            }
 
-                var success = await _phoneService.AddAsync(request);
-                return CreatedAtAction(nameof(GetById), new { id = Guid.NewGuid() }, new SuccessResponse { Message = AppResources.AddPhoneSuccess });
-            }
-            catch (ArgumentException ex)
-            {
-                return this.BadRequestFromArgumentException(ex);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
-            }
+            await _phoneService.AddAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = Guid.NewGuid() }, ApiResponse<object>.SuccessResult(request, AppResources.AddPhoneSuccess));
         }
 
         /// <summary>
@@ -105,31 +91,26 @@ namespace Phone_api.Controllers
         /// <param name="id">Định danh duy nhất của điện thoại cần cập nhật.</param>
         /// <param name="request">Yêu cầu chứa thông tin điện thoại cập nhật.</param>
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SuccessResponse))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(BadResponse))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResponse))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ApiResponse<object>))]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePhoneRequest request)
         {
-            try
-            {
-                if (!TryValidateModel(request))
-                    return this.BadRequestFromModelState(ModelState);
+            if (id == Guid.Empty)
+                return this.BadRequestForInvalidId();
 
-                var success = await _phoneService.UpdateAsync(id, request);
-                if (!success)
-                    return NotFound(new ErrorResponse { Message = AppResources.PhoneNotFound });
+            if (!TryValidateModel(request))
+            {
+                var errors = ControllerBaseExtensions.GetValidationErrors(ModelState);
+                return BadRequest(ApiResponse<object>.ErrorResult("Dữ liệu không hợp lệ.", errors));
+            }
 
-                return Ok(new SuccessResponse { Message = AppResources.UpdatePhoneSuccess });
-            }
-            catch (ArgumentException ex)
-            {
-                return this.BadRequestFromArgumentException(ex);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
-            }
+            var success = await _phoneService.UpdateAsync(id, request);
+            if (!success)
+                return NotFound(ApiResponse<object>.ErrorResult(AppResources.PhoneNotFound));
+
+            return Ok(ApiResponse<object>.SuccessResult(id, AppResources.UpdatePhoneSuccess));
         }
 
         /// <summary>
@@ -137,27 +118,20 @@ namespace Phone_api.Controllers
         /// </summary>
         /// <param name="id">Định danh duy nhất của điện thoại cần xóa.</param>
         [HttpDelete("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SuccessResponse))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(BadResponse))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResponse))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ApiResponse<object>))]
         public async Task<IActionResult> Delete(Guid id)
         {
-            try
-            {
-                var success = await _phoneService.DeleteAsync(id);
-                if (!success)
-                    return NotFound(new ErrorResponse { Message = AppResources.PhoneNotFound });
-                return Ok(new SuccessResponse { Message = AppResources.DeletePhoneSuccess });
-            }
-            catch (ArgumentException ex)
-            {
-                return this.BadRequestFromArgumentException(ex);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
-            }
+            if (id == Guid.Empty)
+                return this.BadRequestForInvalidId();
+
+            var success = await _phoneService.DeleteAsync(id);
+            if (!success)
+                return NotFound(ApiResponse<object>.ErrorResult(AppResources.PhoneNotFound));
+
+            return Ok(ApiResponse<object>.SuccessResult(id, AppResources.DeletePhoneSuccess));
         }
 
         /// <summary>
@@ -165,22 +139,20 @@ namespace Phone_api.Controllers
         /// </summary>
         /// <param name="id">Định danh duy nhất của điện thoại cần duyệt.</param>
         [HttpPatch("{id}/approve")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SuccessResponse))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResponse))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ApiResponse<object>))]
         public async Task<IActionResult> Approve(Guid id)
         {
-            try
-            {
-                var success = await _phoneService.Approve(id);
-                if (!success)
-                    return NotFound(new ErrorResponse { Message = AppResources.PhoneNotFound });
-                return Ok(new SuccessResponse { Message = AppResources.ApprovePhoneSuccess });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
-            }
+            if (id == Guid.Empty)
+                return this.BadRequestForInvalidId();
+
+            var success = await _phoneService.Approve(id);
+            if (!success)
+                return NotFound(ApiResponse<object>.ErrorResult(AppResources.PhoneNotFound));
+
+            return Ok(ApiResponse<object>.SuccessResult(id, AppResources.ApprovePhoneSuccess));
         }
 
         /// <summary>
@@ -188,55 +160,20 @@ namespace Phone_api.Controllers
         /// </summary>
         /// <param name="id">Định danh duy nhất của điện thoại cần từ chối.</param>
         [HttpPatch("{id}/reject")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SuccessResponse))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResponse))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ApiResponse<object>))]
         public async Task<IActionResult> Reject(Guid id)
         {
-            try
-            {
-                var success = await _phoneService.Reject(id);
-                if (!success)
-                    return NotFound(new ErrorResponse { Message = AppResources.PhoneNotFound });
-                return Ok(new SuccessResponse { Message = AppResources.RejectPhoneSuccess });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
-            }
+            if (id == Guid.Empty)
+                return this.BadRequestForInvalidId();
+
+            var success = await _phoneService.Reject(id);
+            if (!success)
+                return NotFound(ApiResponse<object>.ErrorResult(AppResources.PhoneNotFound));
+
+            return Ok(ApiResponse<object>.SuccessResult(id, AppResources.RejectPhoneSuccess));
         }
-    }
-
-    /// <summary>
-    /// Đại diện cho response xấu với thông báo.
-    /// </summary>
-    public class BadResponse
-    {
-        /// <summary>
-        /// Thông báo thành công.
-        /// </summary>
-        public Dictionary<string, string[]>? errors { get; set; }
-    }
-
-    /// <summary>
-    /// Đại diện cho response thành công với thông báo.
-    /// </summary>
-    public class SuccessResponse
-    {
-        /// <summary>
-        /// Thông báo thành công.
-        /// </summary>
-        public string? Message { get; set; }
-    }
-
-    /// <summary>
-    /// Đại diện cho response lỗi với thông báo.
-    /// </summary>
-    public class ErrorResponse
-    {
-        /// <summary>
-        /// Thông báo lỗi.
-        /// </summary>
-        public string? Message { get; set; }
     }
 }
