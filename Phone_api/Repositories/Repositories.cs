@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Phone_api.Common;
 using Phone_api.Data;
+using Phone_api.Exceptions;
 using System.Linq.Expressions;
 
 namespace Phone_api.Repositories
@@ -22,12 +23,12 @@ namespace Phone_api.Repositories
         /// <summary>
         /// Lấy bản ghi theo ID
         /// </summary>
-        public T GetById(Guid id) => _dbSet.Find(id) ?? throw new Exception("Bản ghi không tồn tại");
+        public T GetById(Guid id) => _dbSet.Find(id) ?? throw new NotFoundException("Bản ghi không tồn tại");
 
         /// <summary>
         /// Lấy bản ghi theo ID (async)
         /// </summary>
-        public async Task<T> GetByIdAsync(Guid id) => await _dbSet.FindAsync(id) ?? throw new Exception("Bản ghi không tồn tại");
+        public async Task<T> GetByIdAsync(Guid id) => await _dbSet.FindAsync(id) ?? throw new NotFoundException("Bản ghi không tồn tại");
 
         /// <summary>
         /// Lấy tất cả bản ghi

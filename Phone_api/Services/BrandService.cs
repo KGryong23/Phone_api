@@ -24,7 +24,7 @@ namespace Phone_api.Services
         public async Task<PagedResult<BrandDto>> GetPagedAsync(BaseQuery query)
         {
             var result = await _brandRepository.GetPagedAsync(query, "Name", "Name");
-            var brands = result.Data.Select(b => b.ToDto()).ToList();
+            var brands = result.Items.Select(b => b.ToDto()).ToList();
             return new PagedResult<BrandDto>(brands, result.TotalRecords);
         }
 

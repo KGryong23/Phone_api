@@ -2,12 +2,12 @@
 {
     public class PagedResult<T>
     {
-        public IEnumerable<T> Data { get; }
+        public IEnumerable<T> Items { get; }
         public int TotalRecords { get; }
 
         public PagedResult(IEnumerable<T> data, int totalRecords)
         {
-            Data = data;
+            Items = data;
             TotalRecords = totalRecords;
         }
     }
