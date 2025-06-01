@@ -1,0 +1,29 @@
+services:
+  # phone_api:
+  #   image: ${DOCKER_REGISTRY-}phoneapi
+  #   build:
+  #     context: .
+  #     dockerfile: Phone_api/Dockerfile
+  
+  phonedb:
+    image: mcr.microsoft.com/mssql/server
+    container_name: phonedb
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Trung1232003
+    restart: always
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_phonedata:/var/opt/mssql
+    networks:
+      custom:
+    
+volumes:
+  sqlserver_phonedata:
+
+networks:
+  custom:
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
