@@ -110,3 +110,41 @@ BEGIN
         SET @Result = 0;
     END CATCH;
 END;
+
+/* Chèn dữ liệu giả cho Roles */
+INSERT INTO Roles (Id, Name, Created, LastModified, ModerationStatus) VALUES
+(NEWID(), 'Admin', GETDATE(), GETDATE(), 1),
+(NEWID(), 'Manager', GETDATE(), GETDATE(), 1),
+(NEWID(), 'User', GETDATE(), GETDATE(), 1);
+
+/* Chèn dữ liệu giả cho Permissions */
+INSERT INTO Permissions (Id, Name, Created, LastModified, ModerationStatus) VALUES
+(NEWID(), 'phone.getbyid', GETDATE(), GETDATE(), 1),
+(NEWID(), 'phone.getpaged', GETDATE(), GETDATE(), 1),
+(NEWID(), 'phone.create', GETDATE(), GETDATE(), 1),
+(NEWID(), 'phone.update', GETDATE(), GETDATE(), 1),
+(NEWID(), 'phone.delete', GETDATE(), GETDATE(), 1),
+(NEWID(), 'phone.approve', GETDATE(), GETDATE(), 1),
+(NEWID(), 'phone.reject', GETDATE(), GETDATE(), 1);
+
+DECLARE @AdminRoleId UNIQUEIDENTIFIER = (SELECT Id FROM Roles WHERE Name = 'Admin');
+DECLARE @ManagerRoleId UNIQUEIDENTIFIER = (SELECT Id FROM Roles WHERE Name = 'Manager');
+DECLARE @UserRoleId UNIQUEIDENTIFIER = (SELECT Id FROM Roles WHERE Name = 'User');
+
+/* Chèn dữ liệu giả cho RolePermissions */
+DECLARE @PhoneGetById UNIQUEIDENTIFIER = (SELECT Id FROM Permissions WHERE Name = 'phone.getbyid');
+DECLARE @PhoneGetPaged UNIQUEIDENTIFIER = (SELECT Id FROM Permissions WHERE Name = 'phone.getpaged');
+DECLARE @PhoneCreate UNIQUEIDENTIFIER = (SELECT Id FROM Permissions WHERE Name = 'phone.create');
+DECLARE @PhoneUpdate UNIQUEIDENTIFIER = (SELECT Id FROM Permissions WHERE Name = 'phone.update');
+DECLARE @PhoneDelete UNIQUEIDENTIFIER = (SELECT Id FROM Permissions WHERE Name = 'phone.delete');
+DECLARE @PhoneApprove UNIQUEIDENTIFIER = (SELECT Id FROM Permissions WHERE Name = 'phone.approve');
+DECLARE @PhoneReject UNIQUEIDENTIFIER = (SELECT Id FROM Permissions WHERE Name = 'phone.reject');
+
+INSERT INTO RolePermissions (RoleId, PermissionId) VALUES
+(@AdminRoleId, @PhoneGetById),
+(@AdminRoleId, @PhoneGetPaged),
+(@AdminRoleId, @PhoneCreate),
+(@AdminRoleId, @PhoneUpdate),
+(@AdminRoleId, @PhoneDelete),
+(@AdminRoleId, @PhoneApprove),
+(@AdminRoleId, @PhoneReject);

@@ -13,6 +13,7 @@ namespace Phone_api.Repositories
         void Delete(T entity);
         Task<bool> SaveChangesAsync();
         Task<PagedResult<T>> GetPagedAsync(BaseQuery query, string searchField, string sortField);
-        Task<IEnumerable<T>> FindAllAsync(Expression<Func<T, bool>> exp);
+        Task<IEnumerable<T>> FindAllAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
+        Task<T?> FindFirstAsync(Expression<Func<T, bool>> exp);
     }
 }

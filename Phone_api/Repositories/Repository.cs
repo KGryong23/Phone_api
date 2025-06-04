@@ -95,6 +95,23 @@ namespace Phone_api.Repositories
         /// <summary>
         /// Lấy các bản ghi theo điều kiện
         /// </summary>
-        public async Task<IEnumerable<T>> FindAllAsync(Expression<Func<T, bool>> exp) => await _dbSet.Where(exp).ToListAsync();
+        public async Task<IEnumerable<T>> FindAllAsync(
+            Expression<Func<T, bool>> predicate,
+            params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _dbSet.AsQueryable();
+
+            // Áp dụng các Include
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return await query.Where(predicate).ToListAsync();
+        }
+        /// <summary>
+        /// Lấy bản ghi đầu tiên theo điều kiện.
+        /// </summary>
+        public async Task<T?> FindFirstAsync(Expression<Func<T, bool>> exp) => await _dbSet.Where(exp).FirstOrDefaultAsync();
     }
 }

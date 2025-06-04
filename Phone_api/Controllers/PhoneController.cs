@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Phone_api.Common;
 using Phone_api.Dtos;
-using Phone_api.Services;
 using Phone_api.Extensions;
-using System;
-using System.Threading.Tasks;
+using Phone_api.Filters;
+using Phone_api.Services;
 
 namespace Phone_api.Controllers
 {
@@ -14,6 +13,8 @@ namespace Phone_api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
+    [RequirePermission]
     public class PhoneController : ControllerBase
     {
         private readonly IPhoneService _phoneService;
@@ -31,7 +32,7 @@ namespace Phone_api.Controllers
         /// Lấy danh sách điện thoại phân trang với tùy chọn tìm kiếm và sắp xếp.
         /// </summary>
         /// <param name="query">Tham số truy vấn cho phân trang, tìm kiếm và sắp xếp.</param>
-        [HttpGet]
+        [HttpGet("GetPaged")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PagedResult<PhoneDto>>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ApiResponse<object>))]
@@ -51,7 +52,7 @@ namespace Phone_api.Controllers
         /// Lấy thông tin điện thoại theo ID.
         /// </summary>
         /// <param name="id">Định danh duy nhất của điện thoại.</param>
-        [HttpGet("{id}")]
+        [HttpGet("GetById/{id}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PhoneDto>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -69,7 +70,7 @@ namespace Phone_api.Controllers
         /// Tạo một điện thoại mới.
         /// </summary>
         /// <param name="request">Yêu cầu chứa thông tin điện thoại cần tạo.</param>
-        [HttpPost]
+        [HttpPost("Create")]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ApiResponse<object>))]
@@ -90,7 +91,7 @@ namespace Phone_api.Controllers
         /// </summary>
         /// <param name="id">Định danh duy nhất của điện thoại cần cập nhật.</param>
         /// <param name="request">Yêu cầu chứa thông tin điện thoại cập nhật.</param>
-        [HttpPut("{id}")]
+        [HttpPut("Update/{id}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -117,7 +118,7 @@ namespace Phone_api.Controllers
         /// Xóa một điện thoại theo ID.
         /// </summary>
         /// <param name="id">Định danh duy nhất của điện thoại cần xóa.</param>
-        [HttpDelete("{id}")]
+        [HttpDelete("Delete/{id}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -138,7 +139,7 @@ namespace Phone_api.Controllers
         /// Duyệt một điện thoại theo ID.
         /// </summary>
         /// <param name="id">Định danh duy nhất của điện thoại cần duyệt.</param>
-        [HttpPatch("{id}/approve")]
+        [HttpPatch("Approve/{id}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -159,7 +160,7 @@ namespace Phone_api.Controllers
         /// Từ chối một điện thoại theo ID.
         /// </summary>
         /// <param name="id">Định danh duy nhất của điện thoại cần từ chối.</param>
-        [HttpPatch("{id}/reject")]
+        [HttpPatch("Reject/{id}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]

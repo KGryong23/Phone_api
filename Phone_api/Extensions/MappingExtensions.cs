@@ -1,5 +1,7 @@
-﻿using Phone_api.Dtos;
+﻿using Phone_api.Common;
+using Phone_api.Dtos;
 using Phone_api.Entities;
+using Phone_api.Enums;
 
 namespace Phone_api.Extensions
 {
@@ -21,8 +23,8 @@ namespace Phone_api.Extensions
                 ModerationStatus = phone.ModerationStatus,
                 ModerationStatusTxt = phone.ModerationStatus switch
                 {
-                    Enums.ModerationStatus.Approved => "Đã duyệt",
-                    Enums.ModerationStatus.Rejected => "Chưa duyệt",
+                    ModerationStatus.Approved => "Đã duyệt",
+                    ModerationStatus.Rejected => "Chưa duyệt",
                     _ => "Không xác định"
                 },
                 BrandId = phone.BrandId,
@@ -96,6 +98,28 @@ namespace Phone_api.Extensions
             {
                 Name = dto.Name,
                 ModerationStatus = dto.ModerationStatus
+            };
+        }
+
+        /// <summary>
+        /// Ánh xạ User thành User
+        /// </summary>
+        public static UserDto ToDto(this User user)
+        {
+            return new UserDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                Email = user.Email,
+                ModerationStatusTxt = user.ModerationStatus switch
+                {
+                    ModerationStatus.Approved => AppConstants.Approved,
+                    ModerationStatus.Rejected => AppConstants.Rejected,
+                    _ => AppConstants.NotDetermined
+                },
+                Created = user.Created,
+                LastModified = user.LastModified,
+                ModerationStatus = user.ModerationStatus
             };
         }
     }
