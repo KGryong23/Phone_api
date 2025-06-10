@@ -198,9 +198,6 @@ namespace Phone_api.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<Guid?>("RoleId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -212,9 +209,22 @@ namespace Phone_api.Migrations
 
                     SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("Id"), new[] { "Created", "ModerationStatus" });
 
+                    b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("Phone_api.Entities.UserRole", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UserId", "RoleId");
+
                     b.HasIndex("RoleId");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Phone_api.Entities.Phone", b =>
@@ -246,14 +256,23 @@ namespace Phone_api.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("Phone_api.Entities.User", b =>
+            modelBuilder.Entity("Phone_api.Entities.UserRole", b =>
                 {
                     b.HasOne("Phone_api.Entities.Role", "Role")
-                        .WithMany("Users")
+                        .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Phone_api.Entities.User", "User")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Role");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Phone_api.Entities.Permission", b =>
@@ -265,7 +284,12 @@ namespace Phone_api.Migrations
                 {
                     b.Navigation("RolePermissions");
 
-                    b.Navigation("Users");
+                    b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("Phone_api.Entities.User", b =>
+                {
+                    b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618
         }

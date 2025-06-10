@@ -35,11 +35,11 @@ namespace Phone_api.Configurations
                 .IsRequired()
                 .HasMaxLength(256);
 
-            // Cấu hình quan hệ một-nhiều với Role
-            builder.HasOne(x => x.Role)
-                .WithMany(x => x.Users)
-                .HasForeignKey(x => x.RoleId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // Cấu hình quan hệ nhiều-nhiều với Role qua UserRole
+            builder.HasMany(x => x.UserRoles)
+                .WithOne(x => x.User)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

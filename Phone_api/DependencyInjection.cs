@@ -18,6 +18,7 @@ namespace Phone_api
             services.AddScoped<IBrandRepository, BrandRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IUserRoleRepository, UserRoleRepository>();
             services.AddScoped<IPermissionRepository, PermissionRepository>();
             services.AddScoped<IRolePermissionRepository, RolePermissionRepository>();
 

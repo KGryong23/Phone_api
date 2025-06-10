@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Caching.Memory;
 using Phone_api.Common;
 using Phone_api.Extensions;
-using System.Text.Json;
+using Phone_api.Repositories;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 
 namespace Phone_api.Filters
@@ -12,52 +14,80 @@ namespace Phone_api.Filters
     /// Attribute kiểm tra quyền dựa trên JWT token và PermissionMap.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class RequirePermissionAttribute : AuthorizeAttribute, IAuthorizationFilter
+    public class RequirePermissionAttribute() : AuthorizeAttribute, IAuthorizationFilter
     {
         /// <summary>
         /// Sử dụng attribute này để yêu cầu quyền truy cập cho các endpoint cụ thể.
         /// </summary>
-        public void OnAuthorization(AuthorizationFilterContext context)
+        public async void OnAuthorization(AuthorizationFilterContext context)
         {
-            // [Authorize] đã đảm bảo xác thực, nên không cần kiểm tra token ở đây
+            // Lấy userId từ JWT
+            var userIdClaim = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdClaim, out var userId))
+            {
+                context.Result = new JsonResult(ApiResponse<object>.ErrorResult("Access denied: Invalid user."))
+                {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+                return;
+            }
+
+            // Lấy các service từ DI container
+            var cache = context.HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
+            var permissionRepository = context.HttpContext.RequestServices.GetRequiredService<IPermissionRepository>();
+            var userRoleRepository = context.HttpContext.RequestServices.GetRequiredService<IUserRoleRepository>();
 
             // Chuẩn hóa endpoint
             var endpoint = NormalizeEndpoint(context.HttpContext.Request.Path.Value!);
             var method = context.HttpContext.Request.Method;
             var requiredPermission = $"{endpoint}:{method}";
 
-            var permissionsJson = context.HttpContext.User.FindFirst("permissions")?.Value;
-            if (string.IsNullOrEmpty(permissionsJson))
+            // Lấy RoleId từ cache
+            if (!cache.TryGetValue($"user_{userId}", out List<Guid>? roleIds))
             {
-                context.Result = new JsonResult(ApiResponse<object>.ErrorResult("Access denied: No permissions found."))
+                // Cache miss: lấy từ database và cập nhật cache
+                roleIds = (await userRoleRepository.FindAllAsync(ur => ur.UserId == userId))
+                    .Select(ur => ur.RoleId)
+                    .ToList();
+                cache.Set($"user_{userId}", roleIds, new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = TimeSpan.FromHours(1)
+                });
+            }
+
+            if (roleIds is null || !roleIds.Any())
+            {
+                context.Result = new JsonResult(ApiResponse<object>.ErrorResult("Access denied: No roles assigned."))
                 {
                     StatusCode = StatusCodes.Status403Forbidden
                 };
                 return;
             }
 
-            var userPermissions = JsonSerializer.Deserialize<string[]>(permissionsJson);
-            if (userPermissions == null)
+            // Kiểm tra quyền từ cache cho từng RoleId
+            foreach (var roleId in roleIds)
             {
-                context.Result = new JsonResult(ApiResponse<object>.ErrorResult("Access denied: Invalid permissions format."))
+                if (!cache.TryGetValue($"role_{roleId}", out List<string>? rolePermissions))
                 {
-                    StatusCode = StatusCodes.Status403Forbidden
-                };
-                return;
+                    // Cache miss: lấy từ database và cập nhật cache
+                    rolePermissions = await GetRolePermissionsAsync(permissionRepository, roleId);
+                    cache.Set($"role_{roleId}", rolePermissions, new MemoryCacheEntryOptions
+                    {
+                        SlidingExpiration = TimeSpan.FromHours(1)
+                    });
+                }
+
+                var hasPermission = rolePermissions?.Any(perm =>
+                    PermissionMap.GetEndpoint(perm)?.Equals(requiredPermission, StringComparison.OrdinalIgnoreCase) == true);
+
+                if (hasPermission is not null && hasPermission == true)
+                    return; // Thoát nếu tìm thấy quyền
             }
 
-            // Kiểm tra quyền
-            var hasPermission = userPermissions.Any(perm =>
-                PermissionMap.GetEndpoint(perm)?.Equals(requiredPermission, StringComparison.OrdinalIgnoreCase) == true);
-
-            if (!hasPermission)
+            context.Result = new JsonResult(ApiResponse<object>.ErrorResult("Access denied: Insufficient permissions."))
             {
-                context.Result = new JsonResult(ApiResponse<object>.ErrorResult("Access denied: Insufficient permissions."))
-                {
-                    StatusCode = StatusCodes.Status403Forbidden
-                };
-                return;
-            }
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         /// <summary>
@@ -79,6 +109,15 @@ namespace Phone_api.Filters
 
             // Trả về endpoint gốc nếu không khớp
             return endpoint;
+        }
+
+        private async Task<List<string>> GetRolePermissionsAsync(IPermissionRepository permissionRepository, Guid roleId)
+        {
+            return (await permissionRepository.FindAllAsync(
+                p => p.RolePermissions!.Any(rp => rp.RoleId == roleId),
+                p => p.RolePermissions!))
+                .Select(p => p.Name)
+                .ToList();
         }
     }
 }

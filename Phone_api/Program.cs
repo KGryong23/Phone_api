@@ -114,7 +114,7 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<IdParameterOperationFilter>();
 });
 
-
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 

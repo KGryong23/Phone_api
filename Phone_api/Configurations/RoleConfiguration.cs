@@ -31,11 +31,11 @@ namespace Phone_api.Configurations
                 .IsRequired(false) // Mô tả là tùy chọn
                 .HasMaxLength(200);
 
-            // Cấu hình quan hệ một-nhiều với User
-            builder.HasMany(x => x.Users)
+            // Cấu hình quan hệ nhiều-nhiều với User qua UserRole
+            builder.HasMany(x => x.UserRoles)
                 .WithOne(x => x.Role)
                 .HasForeignKey(x => x.RoleId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Cấu hình quan hệ nhiều-nhiều với Permission
             builder.HasMany(x => x.RolePermissions)

@@ -27,9 +27,9 @@
         public string? Description { get; set; }
 
         /// <summary>
-        /// Danh sách người dùng thuộc vai trò này, đại diện cho mối quan hệ một-nhiều.
+        /// Danh sách người dùng thuộc vai trò này, đại diện cho mối quan hệ nhiều-nhiều.
         /// </summary>
-        public ICollection<User>? Users { get; set; }
+        public ICollection<UserRole>? UserRoles { get; set; }
 
         /// <summary>
         /// Danh sách quyền (Permission) được gán cho vai trò này, đại diện cho mối quan hệ nhiều-nhiều.

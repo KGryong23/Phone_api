@@ -1,4 +1,5 @@
-﻿using Phone_api.Dtos;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Phone_api.Dtos;
 using Phone_api.Entities;
 using Phone_api.Repositories;
 
@@ -12,18 +13,23 @@ namespace Phone_api.Services
         private readonly IRoleRepository _roleRepository;
         private readonly IPermissionRepository _permissionRepository;
         private readonly IRolePermissionRepository _rolePermissionRepository;
-
+        private readonly TimeSpan _cacheExpiration = TimeSpan.FromHours(1);
+        private readonly IMemoryCache _cache;
         /// <summary>
         /// Khởi tạo RoleService với các repository.
         /// </summary>
         /// <param name="roleRepository">Repository cho Role.</param>
         /// <param name="permissionRepository">Repository cho Permission.</param>
         /// <param name="rolePermissionRepository">Repository cho RolePermission.</param>
+        /// <param name="cache">Repository cho MemoryCache.</param>
         public RoleService(
             IRoleRepository roleRepository,
             IPermissionRepository permissionRepository,
-            IRolePermissionRepository rolePermissionRepository)
+            IRolePermissionRepository rolePermissionRepository,
+            IMemoryCache cache
+            )
         {
+            _cache = cache;
             _roleRepository = roleRepository;
             _permissionRepository = permissionRepository;
             _rolePermissionRepository = rolePermissionRepository;
@@ -86,7 +92,12 @@ namespace Phone_api.Services
         {
             var role = await _roleRepository.GetByIdAsync(id);
             _roleRepository.Delete(role);
-            return await _roleRepository.SaveChangesAsync();
+            var result = await _roleRepository.SaveChangesAsync();
+            if (result)
+            {
+                _cache.Remove($"role_{id}");
+            }
+            return result;
         }
 
         /// <summary>
@@ -109,7 +120,16 @@ namespace Phone_api.Services
                 PermissionId = permissionId
             };
             await _rolePermissionRepository.AddAsync(rolePermission);
-            return await _rolePermissionRepository.SaveChangesAsync();
+            var result = await _rolePermissionRepository.SaveChangesAsync();
+            if (result)
+            {
+                var permissions = await GetRolePermissionsAsync(roleId);
+                _cache.Set($"role_{roleId}", permissions, new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = _cacheExpiration
+                });
+            }
+            return result;
         }
 
         /// <summary>
@@ -125,7 +145,28 @@ namespace Phone_api.Services
                 return false;
 
             _rolePermissionRepository.Delete(rolePermission);
-            return await _rolePermissionRepository.SaveChangesAsync();
+            var result = await _rolePermissionRepository.SaveChangesAsync();
+            if (result)
+            {
+                var permissions = await GetRolePermissionsAsync(roleId);
+                _cache.Set($"role_{roleId}", permissions, new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = _cacheExpiration
+                });
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Lấy danh sách quyền của vai trò từ cơ sở dữ liệu.
+        /// </summary>
+        private async Task<List<string>> GetRolePermissionsAsync(Guid roleId)
+        {
+            return (await _permissionRepository.FindAllAsync(
+                p => p.RolePermissions!.Any(rp => rp.RoleId == roleId),
+                p => p.RolePermissions!))
+                .Select(p => p.Name)
+                .ToList();
         }
     }
 }

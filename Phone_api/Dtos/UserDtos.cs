@@ -23,14 +23,9 @@ namespace Phone_api.Dtos
         public string Email { get; set; } = string.Empty;
 
         /// <summary>
-        /// ID của vai trò được gán cho người dùng.
+        /// Danh sách role thuộc vai trò này
         /// </summary>
-        public Guid? RoleId { get; set; }
-
-        /// <summary>
-        /// Tên của vai trò được gán.
-        /// </summary>
-        public string RoleName { get; set; } = string.Empty;
+        public List<string>? RoleNames { get; set; }
 
         /// <summary>
         /// Thời gian tạo bản ghi.
@@ -76,7 +71,7 @@ namespace Phone_api.Dtos
         /// <summary>
         /// ID của vai trò được gán (tùy chọn).
         /// </summary>
-        public Guid? RoleId { get; set; }
+        public List<Guid>? RoleIds { get; set; }
     }
 
     /// <summary>
@@ -97,7 +92,7 @@ namespace Phone_api.Dtos
         /// <summary>
         /// ID của vai trò được gán (tùy chọn).
         /// </summary>
-        public Guid? RoleId { get; set; }
+        public List<Guid>? RoleIds { get; set; }
     }
 
     /// <summary>

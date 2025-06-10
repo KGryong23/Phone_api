@@ -5,7 +5,6 @@ using Phone_api.Extensions;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 
 namespace Phone_api.Services
 {
@@ -30,9 +29,8 @@ namespace Phone_api.Services
         /// Tạo JWT token cho người dùng.
         /// </summary>
         /// <param name="user">Thông tin người dùng.</param>
-        /// <param name="permissions">Danh sách quyền của người dùng (ví dụ: phone.getbyid).</param>
         /// <returns>Thông tin token bao gồm thời hạn hết hạn, token, và thông tin người dùng.</returns>
-        public UserLoginResponse GenerateToken(User user, List<string> permissions)
+        public UserLoginResponse GenerateToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_jwtKey);
@@ -41,9 +39,7 @@ namespace Phone_api.Services
                 Subject = new ClaimsIdentity(new[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, user.Role?.Name ?? "None"),
-                    new Claim("permissions", JsonSerializer.Serialize(permissions)) // Lưu permissions dưới dạng mảng JSON
+                    new Claim(ClaimTypes.Email, user.Email)
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

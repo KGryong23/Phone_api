@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Phone_api.Common;
 using Phone_api.Dtos;
-using Phone_api.Exceptions;
 using Phone_api.Extensions;
 using Phone_api.Services;
 
@@ -60,7 +58,7 @@ namespace Phone_api.Controllers
                 return this.BadRequestForInvalidId();
 
             var user = await _userService.GetByIdAsync(id);
-            if (user == null)
+            if (user is null)
                 return NotFound(ApiResponse<object>.ErrorResult("Không tìm thấy người dùng."));
 
             return Ok(ApiResponse<UserDto>.SuccessResult(user));
@@ -151,16 +149,8 @@ namespace Phone_api.Controllers
                 var errors = ControllerBaseExtensions.GetValidationErrors(ModelState);
                 return BadRequest(ApiResponse<object>.ErrorResult("Dữ liệu không hợp lệ.", errors));
             }
-
-            try
-            {
-                var response = await _userService.LoginAsync(request);
-                return Ok(ApiResponse<UserLoginResponse>.SuccessResult(response, "Đăng nhập thành công."));
-            }
-            catch (UnauthorizedException ex)
-            {
-                return Unauthorized(ApiResponse<object>.ErrorResult(ex.Message));
-            }
+            var response = await _userService.LoginAsync(request);
+            return Ok(ApiResponse<UserLoginResponse>.SuccessResult(response, "Đăng nhập thành công."));
         }
 
         /// <summary>
@@ -180,18 +170,12 @@ namespace Phone_api.Controllers
             if (userId == Guid.Empty || roleId == Guid.Empty)
                 return this.BadRequestForInvalidId();
 
-            try
-            {
-                var success = await _userService.AssignRoleAsync(userId, roleId);
-                if (!success)
-                    return NotFound(ApiResponse<object>.ErrorResult("Không tìm thấy người dùng hoặc vai trò."));
 
-                return Ok(ApiResponse<object>.SuccessResult(new { userId, roleId }, "Gán vai trò thành công."));
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ApiResponse<object>.ErrorResult(ex.Message));
-            }
+            var success = await _userService.AssignRoleAsync(userId, roleId);
+            if (!success)
+                return NotFound(ApiResponse<object>.ErrorResult("Không tìm thấy người dùng hoặc vai trò."));
+
+            return Ok(ApiResponse<object>.SuccessResult(new { userId, roleId }, "Gán vai trò thành công."));
         }
     }
 }

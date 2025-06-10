@@ -54,13 +54,8 @@
         }
 
         /// <summary>
-        /// ID của vai trò (Role) được gán cho người dùng.
+        /// Danh sách vai trò của người dùng, đại diện cho mối quan hệ nhiều-nhiều.
         /// </summary>
-        public Guid? RoleId { get; set; }
-
-        /// <summary>
-        /// Vai trò (Role) được gán cho người dùng, đại diện cho mối quan hệ một-nhiều.
-        /// </summary>
-        public Role? Role { get; set; }
+        public ICollection<UserRole>? UserRoles { get; set; }
     }
 }
